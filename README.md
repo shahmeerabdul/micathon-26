@@ -1,43 +1,354 @@
-**Project Name:** Voice-Activated Vernacular Ledger (Digital 'Khata')
+# Voice-Activated Vernacular Ledger (Digital "Khata")
+
+> A voice-first FinTech prototype that lets shopkeepers track sales, credit (*udhaar*), and inventory by simply speaking in **Urdu** or **Pashto** — no typing, no English, no forms.
+
+Built for **Micathon '26 — "Money Moves"**.
+
+---
+
+## Table of Contents
+
+1. [Executive Summary](#1-executive-summary)
+2. [Problem Statement](#2-problem-statement)
+3. [Target Audience](#3-target-audience)
+4. [Core User Journey](#4-core-user-journey)
+5. [Functional Requirements](#5-functional-requirements)
+6. [Non-Functional Requirements](#6-non-functional-requirements)
+7. [System Architecture](#7-system-architecture)
+8. [Technology Stack](#8-technology-stack)
+9. [Data Model](#9-data-model)
+10. [API Reference](#10-api-reference)
+11. [Getting Started](#11-getting-started)
+12. [Project Structure](#12-project-structure)
+13. [Hackathon Compliance](#13-hackathon-compliance)
+14. [Roadmap](#14-roadmap)
+15. [Team](#15-team)
+
+---
+
 ## 1. Executive Summary
-[cite_start]The Voice-Activated Vernacular Ledger is a highly focused FinTech prototype designed to remove the literacy and language barriers associated with digital financial tracking[cite: 1, 14, 16]. [cite_start]Targeting local shopkeepers and street vendors who operate heavily on credit ('udhaar'), the application replaces complex English-based graphical user interfaces with a single-button voice capture system[cite: 141, 143]. [cite_start]By leveraging AI to parse regional languages (Pashto and Urdu) into structured financial data, the tool allows underserved communities to accurately track income, recover debts, and manage inventory with zero technical friction[cite: 8, 27].
 
-## 2. Target Audience & Problem Statement
-* [cite_start]**The User:** Small business owners, 'kiryana' store operators, and local vendors who rely on handwritten ledgers and lack standard English or digital literacy[cite: 36, 131, 143].
-* [cite_start]**The Problem:** Existing financial and budgeting applications mandate manual data entry through complex interfaces, assuming a fixed level of literacy[cite: 22]. [cite_start]This excludes a massive demographic from digitizing their business, resulting in lost revenue from untracked debts and mismanaged inventory[cite: 30].
-* [cite_start]**The Moment of Use:** Immediately after a customer transaction, the shopkeeper records the financial event (e.g., credit given or cash received) in seconds using natural spoken language[cite: 37].
+The **Voice-Activated Vernacular Ledger** is a highly focused FinTech prototype designed to remove the **literacy** and **language** barriers that keep millions of small-business owners off digital financial tools.
 
-## 3. Functional Requirements
-Functional requirements define the specific behaviors and capabilities the system must execute.
+Instead of forcing users to navigate English menus, typed forms, and complex category pickers, the app reduces the entire bookkeeping experience to a **single button and a spoken sentence**. An AI parsing layer converts messy, mixed-language speech into clean, structured financial records.
 
-* **Voice Capture:** The system must provide a prominent UI button that, when held, activates the device microphone to capture spoken vernacular audio.
-* **Audio Transcription:** The system must transcribe the captured audio into raw text using a Speech-to-Text service calibrated for regional dialects (Urdu/Pashto).
-* **AI Intent Parsing:** The backend must process the raw transcript via a Large Language Model (LLM) to extract structured JSON data, identifying the transaction amount, category, and type (income vs. credit).
-* **Contextual Customer Recognition:** The system must match spoken customer names to existing profiles using Context Grounding (supplying a known name array to the AI) and Fuzzy Matching algorithms to prevent duplicate profile creation for minor mispronunciations.
-* **Visual Ledger Management:** The frontend must render the parsed JSON data as a new, timestamped card on a continuous daily ledger.
-* **Shadow Inventory Deduction:** The system must maintain a hidden database of high-volume items and automatically subtract quantities recognized in the voice prompt from the current stock.
-* **Automated Restock Triggers:** If an item's stock drops to a predefined threshold during a transaction, the system must generate a front-end alert or draft a WhatsApp message to the wholesaler.
-* **Visual Confirmation & Editing:** The system must display a temporary, highly visible toast notification upon logging a transaction, providing the user with an immediate option to undo or edit the entry.
+The result: a shopkeeper who cannot read English — or read at all — can still run a fully digital ledger of income, credit, and inventory in seconds after each transaction.
 
-## 4. Non-Functional Requirements
-Non-functional requirements specify system attributes such as performance, usability, and environmental constraints.
+---
 
-* **Frictionless Usability:** The interface must be entirely comprehensible without written instructions, relying on universally understood iconography (e.g., a microphone icon) and color cues.
-* **High Availability (Offline Resilience):** The core ledger interface and historical data must remain accessible via LocalStorage even if the active internet connection drops, ensuring reliability in low-connectivity areas.
-* **Data Privacy:** The system must not store sensitive financial data in plaintext on external servers. [cite_start]All immediate user states must be handled locally for the prototype to comply with safe data handling practices[cite: 57, 58, 61].
-* **Low Latency AI Resolution:** The turnaround time from the user releasing the recording button to the ledger updating must be minimized to maintain the flow of a fast-paced retail environment.
-* **Cultural and Linguistic Empathy:** The AI processing layer must accurately interpret mixed-language phrasing (e.g., Roman Urdu mixed with Pashto slang) natively, without forcing the user to adopt formal linguistic structures.
+## 2. Problem Statement
 
-## 5. System Architecture & Technology Stack
-* **Frontend Framework:** Next.js (App Router) combined with React Hooks.
-* **User Interface:** Tailwind CSS and shadcn/ui components for rapid, accessible, and responsive mobile-first styling.
-* [cite_start]**Audio Capture:** Native Browser `MediaRecorder` and `window.SpeechRecognition` (Web Speech API) set to `ur-PK` for free, zero-latency frontend capture[cite: 66].
-* **Backend API Engine:** Next.js Route Handlers (`/api/process-audio`) acting as the coordination layer between the frontend and the AI.
-* [cite_start]**AI Parsing Layer:** Google Gemini API (or Groq) to parse unstructured transcripts into strictly typed JSON based on a highly engineered prompt template[cite: 68, 72].
-* **Database & State Management:** Browser LocalStorage for high-speed MVP persistence, completely avoiding complex database schemas that could break during deployment.
+Existing budgeting and accounting apps assume:
 
-## 6. Hackathon Deliverables Compliance
-This project strictly adheres to the Micathon '26 "Money Moves" requirements:
-* [cite_start]**No Hardware:** The solution relies entirely on the user's existing mobile device[cite: 53, 65].
-* [cite_start]**Defensible AI:** The LLM is not used as a novelty; it is the critical bridge translating unstructured, illiterate speech into structured financial data, a problem traditional hardcoded logic cannot solve[cite: 68, 69, 72].
-* [cite_start]**Hyper-Focused Scope:** The project avoids massive, multi-year neobank features and focuses 100% on a single daily friction point for a highly specific demographic[cite: 13, 33, 34].
+- The user can read and write English (or formal Urdu).
+- The user can navigate dropdowns, tabs, and category pickers.
+- The user has time to manually enter each line item.
+
+This excludes the **largest retail demographic in South Asia**: local kiryana stores, tea stalls, and street vendors who operate almost entirely on **paper ledgers** and **verbal credit**.
+
+The consequences are real and measurable:
+
+- **Lost revenue** from forgotten or untracked *udhaar*.
+- **Stockouts** because inventory is never reconciled.
+- **No financial history** → no access to credit, insurance, or digital payments.
+
+---
+
+## 3. Target Audience
+
+| Persona | Description |
+|---|---|
+| **Primary** | Kiryana store owners, small shopkeepers, and street vendors in Pakistan. |
+| **Literacy** | Low-to-none English literacy; often low native-language literacy. |
+| **Device** | Entry-level Android smartphone with intermittent 3G/4G. |
+| **Moment of use** | Immediately after a customer transaction — typically 2–5 seconds of speech. |
+
+---
+
+## 4. Core User Journey
+
+Imagine Ahmed buys 2 kg of sugar on credit for Rs. 500.
+
+1. Shopkeeper taps and holds the **microphone button**.
+2. Says in Urdu: *"Ahmed ko paanch sau ka udhaar, do kilo chini."*
+3. Releases the button. Audio is transcribed on-device via the Web Speech API.
+4. Transcript is sent to the backend, which calls the LLM to produce structured JSON.
+5. A new **ledger card** appears on screen with:
+   - Customer: **Ahmed** (matched to existing profile via fuzzy matching)
+   - Amount: **Rs. 500**
+   - Type: **Credit (udhaar)**
+   - Items: **Sugar × 2 kg**
+6. Sugar stock is silently deducted by 2 kg.
+7. If sugar stock drops below threshold → a pre-drafted WhatsApp message to the wholesaler is shown.
+8. A toast appears: *"Saved. Tap to undo."*
+
+Total time: **under 5 seconds**, zero text input.
+
+---
+
+## 5. Functional Requirements
+
+| # | Requirement | Description |
+|---|---|---|
+| F1 | **Voice Capture** | A prominent hold-to-record microphone button captures vernacular audio. |
+| F2 | **Audio Transcription** | Browser-based Speech-to-Text calibrated for `ur-PK` dialects (Urdu / Pashto / Roman Urdu mix). |
+| F3 | **AI Intent Parsing** | Backend calls an LLM (Gemini / Groq) to extract strictly-typed JSON: `amount`, `customer`, `type`, `items`. |
+| F4 | **Contextual Customer Recognition** | Known customer names are passed to the LLM as context. Fuzzy matching prevents duplicate profiles for mispronunciations (*Ahmad* vs *Ahmed*). |
+| F5 | **Visual Ledger Management** | Parsed transactions render as timestamped cards on a scrollable daily ledger. |
+| F6 | **Shadow Inventory Deduction** | A hidden inventory table auto-decrements stock based on recognized items. |
+| F7 | **Automated Restock Triggers** | When stock falls below threshold, generate a WhatsApp-ready restock message draft. |
+| F8 | **Visual Confirmation & Editing** | Every logged transaction shows a toast with Undo / Edit options. |
+
+---
+
+## 6. Non-Functional Requirements
+
+| # | Attribute | Target |
+|---|---|---|
+| NF1 | **Frictionless Usability** | Operable by a user who cannot read. Icon-only UI, color-coded states. |
+| NF2 | **Offline Resilience** | Full ledger accessible via `LocalStorage` even with no internet. |
+| NF3 | **Data Privacy** | No sensitive financial data stored in plaintext on external servers. All user state held client-side in the MVP. |
+| NF4 | **Low Latency** | Button release → ledger update in **< 3 seconds** on a typical mobile connection. |
+| NF5 | **Linguistic Empathy** | Handles Roman Urdu + Pashto slang + English numbers mixed in the same sentence. |
+| NF6 | **Mobile-first Responsiveness** | Optimized for 360 px wide screens; touch targets ≥ 44 px. |
+
+---
+
+## 7. System Architecture
+
+```
+┌────────────────────────────────────────────────────────────┐
+│                  MOBILE BROWSER (CLIENT)                   │
+│                                                            │
+│  ┌──────────────┐    ┌───────────────┐   ┌──────────────┐  │
+│  │ Mic Button   │───▶│ MediaRecorder │──▶│ Web Speech   │  │
+│  │ (hold-to-    │    │  + Audio Blob │   │ API (ur-PK)  │  │
+│  │  record)     │    └───────────────┘   └──────┬───────┘  │
+│  └──────────────┘                               │          │
+│                                                 ▼          │
+│  ┌──────────────┐    ┌───────────────┐   ┌──────────────┐  │
+│  │ Ledger UI    │◀───│ LocalStorage  │◀──│ Transcript   │  │
+│  │ (cards +     │    │ (ledger,      │   │ (raw text)   │  │
+│  │  toasts)     │    │  customers,   │   └──────┬───────┘  │
+│  └──────────────┘    │  inventory)   │          │          │
+│                      └───────────────┘          │          │
+└─────────────────────────────────────────────────┼──────────┘
+                                                  │
+                                                  ▼  HTTPS
+┌────────────────────────────────────────────────────────────┐
+│               NEXT.JS ROUTE HANDLER (SERVER)               │
+│                                                            │
+│   POST /api/process-audio                                  │
+│     │                                                      │
+│     ▼                                                      │
+│   ┌──────────────────────────────────────────────┐         │
+│   │  Prompt Builder                              │         │
+│   │  - Injects known customer names              │         │
+│   │  - Injects known inventory items             │         │
+│   │  - Enforces strict JSON schema               │         │
+│   └──────────────┬───────────────────────────────┘         │
+│                  ▼                                         │
+│   ┌──────────────────────────────────────────────┐         │
+│   │  LLM Provider (Google Gemini / Groq)         │         │
+│   └──────────────┬───────────────────────────────┘         │
+│                  ▼                                         │
+│   ┌──────────────────────────────────────────────┐         │
+│   │  JSON Validator + Fuzzy Matcher              │         │
+│   └──────────────┬───────────────────────────────┘         │
+│                  ▼                                         │
+│          Structured Transaction JSON ────────────▶ Client  │
+└────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## 8. Technology Stack
+
+| Layer | Technology | Purpose |
+|---|---|---|
+| **Framework** | Next.js 14+ (App Router) | Unified frontend + API runtime |
+| **UI** | React 18, Tailwind CSS, shadcn/ui | Rapid, accessible, mobile-first UI |
+| **Audio Capture** | `MediaRecorder` + `window.SpeechRecognition` | Free, zero-latency speech capture (`ur-PK`) |
+| **API Layer** | Next.js Route Handlers | `/api/process-audio` orchestration |
+| **AI / LLM** | Google Gemini API *(primary)* / Groq *(fallback)* | Vernacular transcript → structured JSON |
+| **Fuzzy Matching** | `fuse.js` | Customer name deduplication |
+| **Persistence** | Browser `LocalStorage` | Zero-backend MVP storage |
+| **Styling Tokens** | Tailwind + CSS variables | Dark/light + color-coded transaction states |
+| **Deployment** | Vercel | One-click deploy for the hackathon demo |
+
+---
+
+## 9. Data Model
+
+All state lives client-side in `LocalStorage` under three keys:
+
+### `ledger`
+```json
+[
+  {
+    "id": "txn_1729180000000",
+    "timestamp": "2026-04-17T18:32:10.000Z",
+    "rawTranscript": "Ahmed ko paanch sau ka udhaar, do kilo chini",
+    "amount": 500,
+    "currency": "PKR",
+    "type": "credit",
+    "customerId": "cust_ahmed_01",
+    "items": [
+      { "name": "sugar", "quantity": 2, "unit": "kg" }
+    ]
+  }
+]
+```
+
+### `customers`
+```json
+[
+  { "id": "cust_ahmed_01", "name": "Ahmed", "aliases": ["Ahmad"], "balance": 500 }
+]
+```
+
+### `inventory`
+```json
+[
+  { "sku": "sugar", "displayName": "Chini", "stock": 18, "unit": "kg", "threshold": 5 }
+]
+```
+
+---
+
+## 10. API Reference
+
+### `POST /api/process-audio`
+
+**Request body**
+```json
+{
+  "transcript": "Ahmed ko paanch sau ka udhaar, do kilo chini",
+  "knownCustomers": ["Ahmed", "Bilal", "Zainab"],
+  "knownItems": ["sugar", "rice", "tea", "oil"]
+}
+```
+
+**Response body**
+```json
+{
+  "amount": 500,
+  "currency": "PKR",
+  "type": "credit",
+  "customer": { "name": "Ahmed", "matched": true, "confidence": 0.97 },
+  "items": [{ "name": "sugar", "quantity": 2, "unit": "kg" }],
+  "warnings": []
+}
+```
+
+**Error codes**
+- `400` — empty or malformed transcript
+- `422` — LLM response failed schema validation
+- `502` — upstream LLM provider unavailable
+
+---
+
+## 11. Getting Started
+
+### Prerequisites
+- Node.js **≥ 20**
+- npm or pnpm
+- A Google Gemini API key (free tier works)
+
+### Installation
+
+```bash
+git clone https://github.com/ZuhaibAkhtarKhan/Micathon-26.git
+cd Micathon-26
+npm install
+```
+
+### Environment variables
+
+Create a `.env.local` file in the project root:
+
+```bash
+GEMINI_API_KEY=your_key_here
+# Optional fallback
+GROQ_API_KEY=your_key_here
+```
+
+### Run locally
+
+```bash
+npm run dev
+```
+
+Open **http://localhost:3000** on your phone (same Wi-Fi) or desktop. Grant microphone permission on first use.
+
+### Build for production
+
+```bash
+npm run build
+npm run start
+```
+
+---
+
+## 12. Project Structure
+
+```
+Micathon-26/
+├── app/
+│   ├── (ledger)/
+│   │   └── page.tsx              # Main ledger screen
+│   ├── api/
+│   │   └── process-audio/
+│   │       └── route.ts          # LLM orchestration
+│   ├── layout.tsx
+│   └── globals.css
+├── components/
+│   ├── MicButton.tsx             # Hold-to-record control
+│   ├── LedgerCard.tsx            # Transaction card
+│   ├── UndoToast.tsx
+│   └── RestockAlert.tsx
+├── lib/
+│   ├── speech.ts                 # Web Speech API wrapper
+│   ├── llm.ts                    # Gemini / Groq client
+│   ├── storage.ts                # LocalStorage helpers
+│   ├── fuzzy.ts                  # Customer name matching
+│   └── prompt.ts                 # Prompt template builder
+├── public/
+├── .env.local.example
+├── package.json
+└── README.md
+```
+
+---
+
+## 13. Hackathon Compliance
+
+This project strictly adheres to the **Micathon '26 "Money Moves"** requirements:
+
+- **No Hardware.** Runs entirely on the user's existing Android phone via the browser.
+- **Defensible AI.** The LLM is not decorative — it performs a task (mixed-language, unstructured speech → structured financial JSON) that traditional rule-based logic genuinely cannot solve.
+- **Hyper-Focused Scope.** No neobank sprawl. One screen, one button, one moment of friction solved end-to-end.
+- **Inclusive by Design.** Explicitly serves a demographic that mainstream FinTech ignores.
+
+---
+
+## 14. Roadmap
+
+**Post-hackathon direction** (not in MVP):
+
+- SMS / IVR fallback for feature phones.
+- Server-side encrypted sync across devices.
+- Automated end-of-day summary via WhatsApp voice note.
+- Credit-score generation from ledger history for micro-lending partners.
+- Multi-shop mode for small chain owners.
+
+---
+
+## 15. Team
+
+Built by Team Micathon '26.
+Repository: [github.com/ZuhaibAkhtarKhan/Micathon-26](https://github.com/ZuhaibAkhtarKhan/Micathon-26)
+
+---
+
+*"The best technology disappears. For a shopkeeper with a paper ledger, the best app is the one that feels like talking."*
