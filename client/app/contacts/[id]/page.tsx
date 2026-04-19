@@ -67,9 +67,35 @@ export default function ContactDetailPage({
       : `Assalam-o-Alaikum ${contact.name}.`
   );
 
-  const handleDelete = () => {
+  const handleDelete = async () => {
     if (debts.length > 0) {
       toast.error("Clear their debts before deleting contact");
+      return;
+    }
+    try {
+      if (
+        contact.mongoCustomerId ||
+        contact.phone?.replace(/\D/g, "").length >= 12
+      ) {
+        const res = await fetch("/api/customers/delete", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            mongoCustomerId: contact.mongoCustomerId,
+            whatsappNumber: contact.mongoCustomerId ? undefined : contact.phone,
+          }),
+        });
+        const json = (await res.json().catch(() => ({}))) as {
+          ok?: boolean;
+          error?: string;
+        };
+        if (!res.ok || !json.ok) {
+          toast.error(json.error ?? "Could not remove cloud copy");
+          return;
+        }
+      }
+    } catch {
+      toast.error("Could not remove cloud copy");
       return;
     }
     deleteContact(id);

@@ -46,6 +46,8 @@ export interface Contact {
   phone: PakistanPhone;
   createdAt: EpochMs;
   updatedAt: EpochMs;
+  /** MongoDB `customers._id` (hex) after voice sync — used for cascade delete. */
+  mongoCustomerId?: string;
 }
 
 /**

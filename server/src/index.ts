@@ -35,9 +35,11 @@ export {
   listCustomers,
   getCustomerById,
   findCustomerByName,
+  getCustomerByWhatsAppNumber,
   upsertCustomerByName,
   updateCustomer,
   deleteCustomer,
+  deleteCustomerCascade,
 } from "./db/customers";
 export {
   listPurchases,
@@ -46,6 +48,7 @@ export {
   createPurchase,
   markPurchaseSettled,
   deletePurchase,
+  deletePurchasesForCustomer,
 } from "./db/purchases";
 export type {
   CustomerDoc,

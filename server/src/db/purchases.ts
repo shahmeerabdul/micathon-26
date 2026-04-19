@@ -187,3 +187,16 @@ export async function deletePurchase(id: string): Promise<boolean> {
   const res = await col.deleteOne({ _id: new ObjectId(id) });
   return res.deletedCount === 1;
 }
+
+/** Remove every purchase row for a customer (before deleting the customer). */
+export async function deletePurchasesForCustomer(
+  customerId: string,
+): Promise<number> {
+  if (!ObjectId.isValid(customerId)) return 0;
+  await ensureIndexes();
+  const col = await getCollection<PurchaseDoc>(COLLECTION);
+  const res = await col.deleteMany({
+    customerId: new ObjectId(customerId),
+  });
+  return res.deletedCount;
+}

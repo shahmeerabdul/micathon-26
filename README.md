@@ -1,6 +1,6 @@
-# Voice-Activated Vernacular Ledger (Digital "Khata")
+# Voice-Activated Vernacular Ledger (Digital **Khata** — کھاتہ)
 
-> A voice-first FinTech prototype that lets shopkeepers track sales, credit (*udhaar*), and inventory by simply speaking in **Urdu** or **Pashto** — no typing, no English, no forms.
+> A voice-first FinTech prototype so shopkeepers can track **sales**, **customer credit (*udhaar*)**, and **supplier payables** by speaking in **Urdu or English** — minimal typing, mobile-first, bilingual labels.
 
 Built for **Micathon '26 — "Money Moves"**.
 
@@ -12,7 +12,7 @@ Built for **Micathon '26 — "Money Moves"**.
 2. [Problem Statement](#2-problem-statement)
 3. [Target Audience](#3-target-audience)
 4. [Core User Journey](#4-core-user-journey)
-5. [Functional Requirements](#5-functional-requirements)
+5. [What the App Does Today](#5-what-the-app-does-today)
 6. [Non-Functional Requirements](#6-non-functional-requirements)
 7. [System Architecture](#7-system-architecture)
 8. [Technology Stack](#8-technology-stack)
@@ -22,35 +22,23 @@ Built for **Micathon '26 — "Money Moves"**.
 12. [Project Structure](#12-project-structure)
 13. [Hackathon Compliance](#13-hackathon-compliance)
 14. [Roadmap](#14-roadmap)
-15. [Team](#15-team)
+15. [Repositories & Team](#15-repositories--team)
 
 ---
 
 ## 1. Executive Summary
 
-The **Voice-Activated Vernacular Ledger** is a highly focused FinTech prototype designed to remove the **literacy** and **language** barriers that keep millions of small-business owners off digital financial tools.
+**Khata** removes literacy and language friction for small retailers: one **hold-to-record** flow sends raw audio to **Google Gemini**, which returns a strict JSON **intent**. The server resolves **customers** and **purchases** in **MongoDB Atlas**, mirrors summaries into the **Zustand** ledger in the browser (**localStorage**), and can send **WhatsApp** receipts and welcomes via **Twilio** (optional).
 
-Instead of forcing users to navigate English menus, typed forms, and complex category pickers, the app reduces the entire bookkeeping experience to a **single button and a spoken sentence**. An AI parsing layer converts messy, mixed-language speech into clean, structured financial records.
-
-The result: a shopkeeper who cannot read English — or read at all — can still run a fully digital ledger of income, credit, and inventory in seconds after each transaction.
+The UI is **bilingual** (English + Urdu script on headers, nav, and key labels), tuned for a **phone-sized** shell on desktop and real devices.
 
 ---
 
 ## 2. Problem Statement
 
-Existing budgeting and accounting apps assume:
+Mainstream accounting tools assume English menus, forms, and time to type each line. Many **kiryana** shops still use **paper *khata*** and memory for *udhaar* and supplier tabs.
 
-- The user can read and write English (or formal Urdu).
-- The user can navigate dropdowns, tabs, and category pickers.
-- The user has time to manually enter each line item.
-
-This excludes the **largest retail demographic in South Asia**: local kiryana stores, tea stalls, and street vendors who operate almost entirely on **paper ledgers** and **verbal credit**.
-
-The consequences are real and measurable:
-
-- **Lost revenue** from forgotten or untracked *udhaar*.
-- **Stockouts** because inventory is never reconciled.
-- **No financial history** → no access to credit, insurance, or digital payments.
+That leads to forgotten balances, inconsistent totals across screens, and no single place that matches how the shopkeeper actually works — **spoken**, **fast**, **in the moment**.
 
 ---
 
@@ -58,46 +46,36 @@ The consequences are real and measurable:
 
 | Persona | Description |
 |---|---|
-| **Primary** | Kiryana store owners, small shopkeepers, and street vendors in Pakistan. |
-| **Literacy** | Low-to-none English literacy; often low native-language literacy. |
-| **Device** | Entry-level Android smartphone with intermittent 3G/4G. |
-| **Moment of use** | Immediately after a customer transaction — typically 2–5 seconds of speech. |
+| **Primary** | Kiryana / general-store owners in Pakistan tracking customer debt and wholesaler payables. |
+| **Literacy** | Comfortable with spoken Urdu and Roman Urdu; Urdu script used as supportive labels. |
+| **Device** | Smartphone browser; microphone used for voice capture. |
 
 ---
 
 ## 4. Core User Journey
 
-Imagine Ahmed buys 2 kg of sugar on credit for Rs. 500.
+Example: *"Ahmed ne lays li, do sau rupay udhaar."*
 
-1. Shopkeeper taps and holds the **microphone button**.
-2. Says in Urdu: *"Ahmed ko paanch sau ka udhaar, do kilo chini."*
-3. Releases the button. Audio is transcribed on-device via the Web Speech API.
-4. Transcript is sent to the backend, which calls the LLM to produce structured JSON.
-5. A new **ledger card** appears on screen with:
-   - Customer: **Ahmed** (matched to existing profile via fuzzy matching)
-   - Amount: **Rs. 500**
-   - Type: **Credit (udhaar)**
-   - Items: **Sugar × 2 kg**
-6. Sugar stock is silently deducted by 2 kg.
-7. If sugar stock drops below threshold → a pre-drafted WhatsApp message to the wholesaler is shown.
-8. A toast appears: *"Saved. Tap to undo."*
-
-Total time: **under 5 seconds**, zero text input.
+1. Shopkeeper opens **Record**, holds **mic**, speaks, releases.
+2. **`POST /api/voice/record`** sends the audio blob to the server (Node runtime).
+3. **Gemini** transcribes and classifies the utterance into a typed intent (e.g. `purchase` debt, `payment`, `new_customer`, `supplier_payment`, `supplier_credit`, `cash_sale`, `query_bills`, …).
+4. **MongoDB** upserts the customer (fuzzy name + **phone-first** match on WhatsApp number to avoid duplicates), inserts or updates **purchases** / balances as appropriate.
+5. The client **mirrors** the result into **Zustand** (debts, payables, sales, contacts) so **Debt**, **Payables**, **Sales**, and **Contacts** stay aligned with what the server saved.
+6. **Receipt** screen shows transcript, amounts, optional **WhatsApp** deep-link and **Done**; outbound messages go through **Twilio** when configured.
 
 ---
 
-## 5. Functional Requirements
+## 5. What the App Does Today
 
-| # | Requirement | Description |
-|---|---|---|
-| F1 | **Voice Capture** | A prominent hold-to-record microphone button captures vernacular audio. |
-| F2 | **Audio Transcription** | Browser-based Speech-to-Text calibrated for `ur-PK` dialects (Urdu / Pashto / Roman Urdu mix). |
-| F3 | **AI Intent Parsing** | Backend calls an LLM (Gemini / Groq) to extract strictly-typed JSON: `amount`, `customer`, `type`, `items`. |
-| F4 | **Contextual Customer Recognition** | Known customer names are passed to the LLM as context. Fuzzy matching prevents duplicate profiles for mispronunciations (*Ahmad* vs *Ahmed*). |
-| F5 | **Visual Ledger Management** | Parsed transactions render as timestamped cards on a scrollable daily ledger. |
-| F6 | **Shadow Inventory Deduction** | A hidden inventory table auto-decrements stock based on recognized items. |
-| F7 | **Automated Restock Triggers** | When stock falls below threshold, generate a WhatsApp-ready restock message draft. |
-| F8 | **Visual Confirmation & Editing** | Every logged transaction shows a toast with Undo / Edit options. |
+| Area | Behavior |
+|---|---|
+| **Voice intents** | Purchase on tab (debt), cash sale, payment toward debt, new customer, bill query, **supplier payment** (reduce payable), **supplier credit** (increase payable / merge by supplier), **cash_sale** (anonymous daily sale), **disambiguation** when two contacts match a name. |
+| **Ledger UI** | Dashboard, **Debt** (grouped by contact), **Payables** (grouped by supplier), **Sales**, **Activity**, manual **New** flows for debt / payable / sale. |
+| **Contacts** | List, detail, **delete** (blocked if open debts), call / WhatsApp links where phone exists. |
+| **Entry detail** | View + **edit** amount / wholesaler / notes; mark settled or paid. |
+| **Auth (demo)** | Simple **login** gate with fixed demo credentials (local Zustand); adjust or remove for production. |
+| **WhatsApp** | Twilio-backed welcome, purchase receipt, bills summary; **Khata** signature in copy; client-side `wa.me` / web WhatsApp links from the receipt flow. |
+| **Persistence** | **Hybrid**: MongoDB is source of truth for voice-backed customers & purchases; **localStorage** holds the full UI ledger for fast lists and offline-style demo. |
 
 ---
 
@@ -105,60 +83,40 @@ Total time: **under 5 seconds**, zero text input.
 
 | # | Attribute | Target |
 |---|---|---|
-| NF1 | **Frictionless Usability** | Operable by a user who cannot read. Icon-only UI, color-coded states. |
-| NF2 | **Offline Resilience** | Full ledger accessible via `LocalStorage` even with no internet. |
-| NF3 | **Data Privacy** | No sensitive financial data stored in plaintext on external servers. All user state held client-side in the MVP. |
-| NF4 | **Low Latency** | Button release → ledger update in **< 3 seconds** on a typical mobile connection. |
-| NF5 | **Linguistic Empathy** | Handles Roman Urdu + Pashto slang + English numbers mixed in the same sentence. |
-| NF6 | **Mobile-first Responsiveness** | Optimized for 360 px wide screens; touch targets ≥ 44 px. |
+| NF1 | **Usability** | Large touch targets, clear money-in / money-out cues, bilingual labels. |
+| NF2 | **Resilience** | Lists and manual edits work from local state; voice path requires network + API keys. |
+| NF3 | **Privacy** | Do **not** commit real `.env.local` or secrets; use `server/.env.example` placeholders only. |
+| NF4 | **Latency** | Audio upload + Gemini + Mongo typically a few seconds on good connectivity. |
+| NF5 | **Language** | Mixed Urdu / English utterances supported in the Gemini system prompt. |
+| NF6 | **Layout** | Mobile-first shell (~440px wide preview) with internal scroll where needed. |
 
 ---
 
 ## 7. System Architecture
 
 ```
-┌────────────────────────────────────────────────────────────┐
-│                  MOBILE BROWSER (CLIENT)                   │
-│                                                            │
-│  ┌──────────────┐    ┌───────────────┐   ┌──────────────┐  │
-│  │ Mic Button   │───▶│ MediaRecorder │──▶│ Web Speech   │  │
-│  │ (hold-to-    │    │  + Audio Blob │   │ API (ur-PK)  │  │
-│  │  record)     │    └───────────────┘   └──────┬───────┘  │
-│  └──────────────┘                               │          │
-│                                                 ▼          │
-│  ┌──────────────┐    ┌───────────────┐   ┌──────────────┐  │
-│  │ Ledger UI    │◀───│ LocalStorage  │◀──│ Transcript   │  │
-│  │ (cards +     │    │ (ledger,      │   │ (raw text)   │  │
-│  │  toasts)     │    │  customers,   │   └──────┬───────┘  │
-│  └──────────────┘    │  inventory)   │          │          │
-│                      └───────────────┘          │          │
-└─────────────────────────────────────────────────┼──────────┘
-                                                  │
-                                                  ▼  HTTPS
-┌────────────────────────────────────────────────────────────┐
-│               NEXT.JS ROUTE HANDLER (SERVER)               │
-│                                                            │
-│   POST /api/process-audio                                  │
-│     │                                                      │
-│     ▼                                                      │
-│   ┌──────────────────────────────────────────────┐         │
-│   │  Prompt Builder                              │         │
-│   │  - Injects known customer names              │         │
-│   │  - Injects known inventory items             │         │
-│   │  - Enforces strict JSON schema               │         │
-│   └──────────────┬───────────────────────────────┘         │
-│                  ▼                                         │
-│   ┌──────────────────────────────────────────────┐         │
-│   │  LLM Provider (Google Gemini / Groq)         │         │
-│   └──────────────┬───────────────────────────────┘         │
-│                  ▼                                         │
-│   ┌──────────────────────────────────────────────┐         │
-│   │  JSON Validator + Fuzzy Matcher              │         │
-│   └──────────────┬───────────────────────────────┘         │
-│                  ▼                                         │
-│          Structured Transaction JSON ────────────▶ Client  │
-└────────────────────────────────────────────────────────────┘
+┌─────────────────────────────────────────────────────────────────┐
+│                    NEXT.JS CLIENT (React 19)                     │
+│  Zustand + localStorage  ←→  Lists: debt / payables / sales     │
+│  AuthGate · MobileShell · bilingual headers                      │
+└───────────────────────────────┬─────────────────────────────────┘
+                                │ multipart audio + JSON
+                                ▼
+┌─────────────────────────────────────────────────────────────────┐
+│              NEXT.JS ROUTE HANDLERS (Node runtime)              │
+│  /api/voice/record  ·  /api/voice/commit  ·  /api/voice/undo    │
+└───────────────────────────────┬─────────────────────────────────┘
+                                │
+        ┌───────────────────────┼───────────────────────┐
+        ▼                       ▼                       ▼
+┌───────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│ Google Gemini │     │ MongoDB Atlas   │     │ Twilio WhatsApp│
+│ audio + JSON  │     │ customers,      │     │ (optional)     │
+│ intent schema │     │ purchases       │     │ outbound sends │
+└───────────────┘     └─────────────────┘     └─────────────────┘
 ```
+
+`@khata/server` holds **Gemini client**, **voice-intent pipeline**, **Mongo repositories**, and shared **types**; the client imports it via `transpilePackages`.
 
 ---
 
@@ -166,163 +124,103 @@ Total time: **under 5 seconds**, zero text input.
 
 | Layer | Technology | Purpose |
 |---|---|---|
-| **Framework** | Next.js 14+ (App Router) | Unified frontend + API runtime |
-| **UI** | React 18, Tailwind CSS, shadcn/ui | Rapid, accessible, mobile-first UI |
-| **Audio Capture** | `MediaRecorder` + `window.SpeechRecognition` | Free, zero-latency speech capture (`ur-PK`) |
-| **API Layer** | Next.js Route Handlers | `/api/process-audio` orchestration |
-| **AI / LLM** | Google Gemini API *(primary)* / Groq *(fallback)* | Vernacular transcript → structured JSON |
-| **Fuzzy Matching** | `fuse.js` | Customer name deduplication |
-| **Persistence** | Browser `LocalStorage` | Zero-backend MVP storage |
-| **Styling Tokens** | Tailwind + CSS variables | Dark/light + color-coded transaction states |
-| **Deployment** | Vercel | One-click deploy for the hackathon demo |
+| **App** | **Next.js 16** (App Router, Turbopack) | UI + API routes in one repo |
+| **UI** | **React 19**, Tailwind CSS, Lucide, Sonner | Mobile-first screens |
+| **State** | **Zustand** + `persist` (localStorage) | Contacts, debts, payables, sales, demo auth |
+| **Voice / AI** | **Google Gemini** (`@google/genai`), `gemini-3-flash-preview` default | Audio → transcript + structured intent |
+| **Database** | **MongoDB** (official driver) | Customers, purchases, indexes |
+| **Messaging** | **Twilio** WhatsApp API | Welcome, receipt, bills summary |
+| **Validation** | **Zod** | Intent and document shapes |
+| **Monorepo** | **pnpm** workspaces | `client` + `server` packages |
 
 ---
 
 ## 9. Data Model
 
-All state lives client-side in `LocalStorage` under three keys:
+### Server (MongoDB)
 
-### `ledger`
-```json
-[
-  {
-    "id": "txn_1729180000000",
-    "timestamp": "2026-04-17T18:32:10.000Z",
-    "rawTranscript": "Ahmed ko paanch sau ka udhaar, do kilo chini",
-    "amount": 500,
-    "currency": "PKR",
-    "type": "credit",
-    "customerId": "cust_ahmed_01",
-    "items": [
-      { "name": "sugar", "quantity": 2, "unit": "kg" }
-    ]
-  }
-]
-```
+- **`customers`** — name, optional `whatsappNumber` (unique when set), aliases, timestamps.  
+- **`purchases`** — `customerId`, `kind` (`debt` | `cash` | `payment`), amount, items, settled flag, transcript notes.
 
-### `customers`
-```json
-[
-  { "id": "cust_ahmed_01", "name": "Ahmed", "aliases": ["Ahmad"], "balance": 500 }
-]
-```
+Balance views aggregate from purchases (owed vs spent).
 
-### `inventory`
-```json
-[
-  { "sku": "sugar", "displayName": "Chini", "stock": 18, "unit": "kg", "threshold": 5 }
-]
-```
+### Client (Zustand → `localStorage` key `khata.ledger.v1`)
+
+- **`Contact`**, **`Debt`**, **`Payable`**, **`Sale`** — see `server/src/types.ts` and `client/lib/store/ledger-store.ts`.  
+- Selectors group **open debts by contact** and **open payables by supplier** for cleaner list screens.
+
+Voice success responses are **mirrored** into this store so the UI updates immediately after `/api/voice/record`.
 
 ---
 
 ## 10. API Reference
 
-### `POST /api/process-audio`
+### `POST /api/voice/record`
 
-**Request body**
-```json
-{
-  "transcript": "Ahmed ko paanch sau ka udhaar, do kilo chini",
-  "knownCustomers": ["Ahmed", "Bilal", "Zainab"],
-  "knownItems": ["sugar", "rice", "tea", "oil"]
-}
-```
+- **Body:** `multipart/form-data` with field **`audio`** (e.g. `webm` / `m4a`).  
+- **Behavior:** Runs `runVoiceIntent` — Gemini + Mongo + optional Twilio.  
+- **Response:** `{ ok: true, data: VoiceIntentResult }` with `action`, `customer`, `purchase`, `balance`, `messaging`, `customerCreated`, disambiguation payloads when applicable.
 
-**Response body**
-```json
-{
-  "amount": 500,
-  "currency": "PKR",
-  "type": "credit",
-  "customer": { "name": "Ahmed", "matched": true, "confidence": 0.97 },
-  "items": [{ "name": "sugar", "quantity": 2, "unit": "kg" }],
-  "warnings": []
-}
-```
+### `POST /api/voice/commit`
 
-**Error codes**
-- `400` — empty or malformed transcript
-- `422` — LLM response failed schema validation
-- `502` — upstream LLM provider unavailable
+- **Body:** `{ intent, customerId }` — used after the user picks one person from a **disambiguation** list.  
+- **Response:** Same shape as record path for the committed intent.
+
+### `POST /api/voice/undo`
+
+- **Body:** `{ purchaseId }` (Mongo purchase `_id` hex).  
+- **Behavior:** Deletes that purchase document (best-effort rollback after a bad match).
 
 ---
 
 ## 11. Getting Started
 
 ### Prerequisites
-- Node.js **≥ 20**
-- **pnpm ≥ 9** (this is a monorepo — `npm install` will **not** work)
-- A **Google Gemini API key** → [aistudio.google.com/apikey](https://aistudio.google.com/apikey)
-- A **MongoDB Atlas cluster** (free M0 tier is enough) → [cloud.mongodb.com](https://cloud.mongodb.com)
 
-### Installation
+- **Node.js ≥ 20**  
+- **pnpm ≥ 9** (`packageManager` is pinned in root `package.json`)  
+- **Google Gemini API key** — [Google AI Studio](https://aistudio.google.com/apikey)  
+- **MongoDB Atlas** — [cloud.mongodb.com](https://cloud.mongodb.com)  
+- **Twilio** (optional) — [console.twilio.com](https://console.twilio.com) for WhatsApp sandbox or production sender  
+
+### Install
 
 ```bash
-git clone https://github.com/ZuhaibAkhtarKhan/Micathon-26.git
-cd Micathon-26
+git clone https://github.com/shahmeerabdul/micathon-26.git
+cd micathon-26
 pnpm install
 ```
 
-### Environment variables
+*(Original team fork: [github.com/ZuhaibAkhtarKhan/Micathon-26](https://github.com/ZuhaibAkhtarKhan/Micathon-26).)*
 
-The template lives at `server/.env.example`. Copy it to **`client/.env.local`** (Next.js reads env vars relative to the app root, not the workspace root):
+### Environment
+
+Copy the template and fill in **real** values locally (never commit secrets):
 
 ```bash
 cp server/.env.example client/.env.local
 ```
 
-Then open `client/.env.local` and fill in:
+Edit **`client/.env.local`** — Next.js loads env from the **client** app root. Variables are documented in **`server/.env.example`** (placeholders only in git):
 
-```bash
-# Gemini — used for audio transcription + intent parsing
-GEMINI_API_KEY=your_google_ai_studio_key
-GEMINI_MODEL=gemini-3-flash-preview
+- `GEMINI_API_KEY`, `GEMINI_MODEL`  
+- `MONGODB_URI`, `MONGODB_DB`, optional `MONGODB_DNS_SERVERS`  
+- `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_WHATSAPP_FROM`, `TWILIO_WHATSAPP_ENABLED`  
 
-# MongoDB Atlas — stores customers and purchases
-MONGODB_URI=mongodb+srv://<user>:<pwd>@<cluster>.mongodb.net/?retryWrites=true&w=majority
-MONGODB_DB=khata
-```
-
-> **Setting up Atlas:** create a free cluster → *Database Access* → add a user with `readWrite` → *Network Access* → allow your IP (or `0.0.0.0/0` for the hackathon) → *Connect* → *Drivers* → copy the connection string. Substitute `<user>` and `<pwd>` with the credentials you created.
-
-### Run locally
+### Run
 
 ```bash
 pnpm dev
 ```
 
-This runs `next dev` inside `client/` and hot-transpiles the `server/` package via Next's `transpilePackages`. Open **http://localhost:3000** on your phone (same Wi-Fi) or desktop. Grant microphone permission on first use.
+Open **http://localhost:3000** — allow the microphone when prompted.
 
-### Build for production
+### Build
 
 ```bash
-pnpm build   # full monorepo typecheck + Next production build
-pnpm start   # serve the built app
+pnpm build
+pnpm start
 ```
-
-### Voice pipeline (how a single utterance flows through the stack)
-
-```
-📱 Phone mic
-  │  MediaRecorder → Blob (audio/webm or audio/mp4)
-  ▼
-POST /api/voice/record        (Next.js route handler, Node runtime)
-  │
-  ├─► Gemini 3 Flash
-  │      • Inline audio + system prompt
-  │      • responseSchema forces a valid JSON intent
-  │
-  ├─► MongoDB Atlas › customers
-  │      • Fuzzy-match spoken name (Dice bigrams + token boost)
-  │      • Auto-create customer when similarity < 0.72
-  │
-  └─► MongoDB Atlas › purchases
-         • Insert { customerId, items, amount, kind, audioTranscript }
-         • Return the saved doc + fresh customer balance
-```
-
-The frontend then navigates to `/record/receipt`, which shows the Gemini transcript, the resolved customer, the saved items, the running balance, and an **Undo** button that calls `POST /api/voice/undo` to delete the purchase if the match was wrong.
 
 ---
 
@@ -331,80 +229,75 @@ The frontend then navigates to `/record/receipt`, which shows the Gemini transcr
 ```
 Micathon-26/
 ├── pnpm-workspace.yaml
-├── tsconfig.base.json
-├── package.json                    # root orchestrator (pnpm workspaces)
-│
-├── client/                         # Next.js 16 App Router (frontend)
+├── package.json
+├── client/                              # @khata/client — Next.js app
 │   ├── app/
-│   │   ├── page.tsx                # Dashboard (hero balance + recent)
+│   │   ├── page.tsx                     # Home dashboard
+│   │   ├── login/                       # Demo login
 │   │   ├── record/
-│   │   │   ├── page.tsx            # Hold-to-speak mic
-│   │   │   ├── confirm/page.tsx    # Local/offline confirm flow
-│   │   │   └── receipt/page.tsx    # Post-save receipt (server path)
+│   │   │   ├── page.tsx                 # Hold-to-record
+│   │   │   ├── choose/page.tsx          # Name disambiguation
+│   │   │   ├── confirm/page.tsx         # Alternate confirm flow
+│   │   │   └── receipt/page.tsx         # Post-voice receipt + WhatsApp
 │   │   ├── api/voice/
-│   │   │   ├── record/route.ts     # Audio upload → Gemini → Mongo
-│   │   │   └── undo/route.ts       # Delete last saved purchase
-│   │   ├── debt|payables|sales/    # Ledger filter views
-│   │   ├── contacts/…              # Contact list + detail + new
-│   │   ├── new/…                   # Manual-entry forms
-│   │   └── entry/[category]/[id]/  # Entry detail + settle/delete
-│   ├── components/                 # UI primitives + shared layouts
+│   │   │   ├── record/route.ts
+│   │   │   ├── commit/route.ts
+│   │   │   └── undo/route.ts
+│   │   ├── debt|payables|sales|activity|contacts|new|entry/…
+│   │   ├── layout.tsx                   # AuthGate + shell
+│   │   └── globals.css
+│   ├── components/                      # Layout, dashboard, shared UI
 │   ├── lib/
+│   │   ├── store/                       # ledger-store, auth-store, selectors
 │   │   ├── hooks/useAudioRecorder.ts
-│   │   ├── store/                  # Zustand stores + selectors
-│   │   ├── actions.ts              # Client ↔ server API wrapper
-│   │   ├── fuzzy.ts | intent.ts    # Local demo fallbacks
-│   │   └── types.ts                # Re-exports from @khata/server
-│   └── next.config.ts              # transpilePackages: ["@khata/server"]
+│   │   └── actions.ts                   # uploadVoiceAudio + mirror helpers
+│   └── next.config.ts                   # transpilePackages: ["@khata/server"]
 │
-└── server/                         # @khata/server (backend logic)
-    ├── src/
-    │   ├── types.ts                # Domain types (Contact, Debt, …)
-    │   ├── encryption.ts           # PBKDF2 + AES-GCM vault
-    │   ├── integrations/
-    │   │   └── gemini-client.ts    # Gemini 3 Flash wrapper
-    │   ├── db/
-    │   │   ├── mongo.ts            # Atlas client singleton
-    │   │   ├── schemas.ts          # Zod + Mongo doc shapes
-    │   │   ├── customers.ts        # CRUD + fuzzy name lookup
-    │   │   └── purchases.ts        # CRUD + balance aggregation
-    │   ├── actions/
-    │   │   └── voice-intent.ts     # audio → Gemini → Mongo pipeline
-    │   └── index.ts                # Public barrel of @khata/server
-    ├── scripts/smoke-crypto.mjs    # Vault smoke test
-    ├── .env.example                # Template for client/.env.local
-    └── package.json
+└── server/                              # @khata/server
+    └── src/
+        ├── types.ts
+        ├── encryption.ts
+        ├── env/load-env.ts
+        ├── integrations/
+        │   ├── gemini-client.ts
+        │   └── twilio-client.ts
+        ├── db/
+        │   ├── mongo.ts
+        │   ├── schemas.ts
+        │   ├── customers.ts
+        │   └── purchases.ts
+        ├── actions/voice-intent.ts
+        └── index.ts
 ```
 
 ---
 
 ## 13. Hackathon Compliance
 
-This project strictly adheres to the **Micathon '26 "Money Moves"** requirements:
-
-- **No Hardware.** Runs entirely on the user's existing Android phone via the browser.
-- **Defensible AI.** The LLM is not decorative — it performs a task (mixed-language, unstructured speech → structured financial JSON) that traditional rule-based logic genuinely cannot solve.
-- **Hyper-Focused Scope.** No neobank sprawl. One screen, one button, one moment of friction solved end-to-end.
-- **Inclusive by Design.** Explicitly serves a demographic that mainstream FinTech ignores.
+- **No extra hardware** — browser on a phone or laptop.  
+- **Defensible AI** — Gemini turns noisy vernacular audio into structured financial intents with guardrails and Mongo writes.  
+- **Focused scope** — *khata* for customers and suppliers, not a full neobank.  
+- **Inclusive** — Urdu/English voice and bilingual UI cues.
 
 ---
 
 ## 14. Roadmap
 
-**Post-hackathon direction** (not in MVP):
-
-- SMS / IVR fallback for feature phones.
-- Server-side encrypted sync across devices.
-- Automated end-of-day summary via WhatsApp voice note.
-- Credit-score generation from ledger history for micro-lending partners.
-- Multi-shop mode for small chain owners.
+- Encrypted multi-device sync (vault types already exist in `@khata/server`).  
+- Stronger auth than demo login.  
+- Deeper reconciliation between Mongo history and local ledger.  
+- SMS / UPI-style reminders where regulations allow.
 
 ---
 
-## 15. Team
+## 15. Repositories & Team
 
-Built by Team Micathon '26.
-Repository: [github.com/ZuhaibAkhtarKhan/Micathon-26](https://github.com/ZuhaibAkhtarKhan/Micathon-26)
+| Repo | URL |
+|---|---|
+| **Primary (this fork)** | [github.com/shahmeerabdul/micathon-26](https://github.com/shahmeerabdul/micathon-26) |
+| **Team upstream** | [github.com/ZuhaibAkhtarKhan/Micathon-26](https://github.com/ZuhaibAkhtarKhan/Micathon-26) |
+
+Built for **Micathon '26**.
 
 ---
 

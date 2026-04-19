@@ -33,6 +33,7 @@ import type { VoiceIntentResult, GeminiIntent } from "@khata/server";
 import { parseIntent as heuristicParseIntent } from "./intent";
 import { matchContacts } from "./fuzzy";
 import { useLedgerStore } from "./store/ledger-store";
+import { now } from "./ids";
 
 /* -------------------------------------------------------------------------- */
 /*  Server-backed voice pipeline                                              */
@@ -111,30 +112,46 @@ function ensureLocalContact(
   if (!customer) return null;
   const store = useLedgerStore.getState();
   const existing = store.contacts;
-
+  const serverId = customer.id?.trim();
   const serverPhone = customer.whatsappNumber?.trim();
+
+  let contact: Contact | undefined;
+
   if (serverPhone) {
-    const byPhone = existing.find((c) => c.phone === serverPhone);
-    if (byPhone) return byPhone;
+    contact = existing.find((c) => c.phone === serverPhone);
+  }
+  if (!contact) {
+    const nameKey = normalizeName(customer.name);
+    contact = existing.find((c) => normalizeName(c.name) === nameKey);
   }
 
-  const nameKey = normalizeName(customer.name);
-  const byName = existing.find((c) => normalizeName(c.name) === nameKey);
-  if (byName) {
-    // Backfill a phone we didn't have locally.
-    if (serverPhone && !byName.phone) {
-      store.updateContact({ ...byName, phone: serverPhone as PakistanPhone });
-      return { ...byName, phone: serverPhone as PakistanPhone };
-    }
-    return byName;
+  if (!contact) {
+    return store.addContact({
+      name: customer.name,
+      phone: (serverPhone ?? "") as PakistanPhone,
+      ...(serverId ? { mongoCustomerId: serverId } : {}),
+    });
   }
 
-  return store.addContact({
-    name: customer.name,
-    // addContact wants a PakistanPhone; we cast because the UI tolerates an
-    // empty phone and the server will accept the backfill later.
-    phone: (serverPhone ?? "") as PakistanPhone,
-  });
+  const phonePatch =
+    serverPhone && contact.phone !== serverPhone
+      ? (serverPhone as PakistanPhone)
+      : undefined;
+  const mongoPatch =
+    serverId && contact.mongoCustomerId !== serverId ? serverId : undefined;
+
+  if (phonePatch || mongoPatch) {
+    const next: Contact = {
+      ...contact,
+      ...(phonePatch ? { phone: phonePatch } : {}),
+      ...(mongoPatch ? { mongoCustomerId: mongoPatch } : {}),
+      updatedAt: now(),
+    };
+    store.updateContact(next);
+    return next;
+  }
+
+  return contact;
 }
 
 /**

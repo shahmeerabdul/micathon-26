@@ -15,6 +15,7 @@
 
 import { ObjectId } from "mongodb";
 import { getCollection } from "./mongo";
+import { deletePurchasesForCustomer } from "./purchases";
 import {
   CustomerSchema,
   type CustomerDoc,
@@ -313,4 +314,22 @@ export async function deleteCustomer(id: string): Promise<boolean> {
   const col = await getCollection<CustomerDoc>(COLLECTION);
   const res = await col.deleteOne({ _id: new ObjectId(id) });
   return res.deletedCount === 1;
+}
+
+export async function getCustomerByWhatsAppNumber(
+  whatsappNumber: string,
+): Promise<CustomerView | null> {
+  const trimmed = whatsappNumber.trim();
+  if (!trimmed) return null;
+  await ensureIndexes();
+  const col = await getCollection<CustomerDoc>(COLLECTION);
+  const doc = await col.findOne({ whatsappNumber: trimmed });
+  return doc ? customerToView(doc) : null;
+}
+
+/** Deletes all purchases for this customer, then the customer document. */
+export async function deleteCustomerCascade(id: string): Promise<boolean> {
+  if (!ObjectId.isValid(id)) return false;
+  await deletePurchasesForCustomer(id);
+  return deleteCustomer(id);
 }

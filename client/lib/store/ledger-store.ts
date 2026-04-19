@@ -58,7 +58,11 @@ interface LedgerState {
   setHasHydrated(v: boolean): void;
 
   // --- contacts ----------------------------------------------------------
-  addContact(input: { name: string; phone: PakistanPhone }): Contact;
+  addContact(input: {
+    name: string;
+    phone: PakistanPhone;
+    mongoCustomerId?: string;
+  }): Contact;
   updateContact(contact: Contact): void;
   deleteContact(id: Id): void;
 
@@ -130,6 +134,9 @@ export const useLedgerStore = create<LedgerState>()(
           phone: input.phone,
           createdAt: t,
           updatedAt: t,
+          ...(input.mongoCustomerId
+            ? { mongoCustomerId: input.mongoCustomerId }
+            : {}),
         };
         set({ contacts: [...get().contacts, c] });
         return c;
@@ -141,7 +148,11 @@ export const useLedgerStore = create<LedgerState>()(
           ),
         }),
       deleteContact: (id) =>
-        set({ contacts: get().contacts.filter((c) => c.id !== id) }),
+        set({
+          contacts: get().contacts.filter((c) => c.id !== id),
+          // Drop walk-in sales tied to this contact so nothing points at a removed id.
+          sales: get().sales.filter((s) => s.customerContactId !== id),
+        }),
 
       // ── debts ───────────────────────────────────────────────────────────
       addDebt: (input) => {
