@@ -39,6 +39,7 @@ export default function NewContactPage() {
       <AppHeader
         variant="page"
         title="New contact"
+        urduTitle="نیا رابطہ"
         subtitle="Nay customer"
         backHref="/contacts"
       />

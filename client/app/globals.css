@@ -171,4 +171,13 @@
     font-variant-numeric: tabular-nums;
     font-feature-settings: "tnum";
   }
+  /* Hide scrollbars inside the phone canvas so content stays centered
+     and the UI feels native (phones don't show a persistent scrollbar). */
+  .no-scrollbar {
+    scrollbar-width: none;
+    -ms-overflow-style: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
 }

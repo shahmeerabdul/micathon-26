@@ -15,7 +15,6 @@ import { HeroBalance } from "@/components/dashboard/HeroBalance";
 import { StatTile } from "@/components/dashboard/StatTile";
 import { CategoryCard } from "@/components/dashboard/CategoryCard";
 import { RecentList } from "@/components/dashboard/RecentList";
-import { RestockAlert } from "@/components/dashboard/RestockAlert";
 import { DashboardSkeleton } from "@/components/shared/Skeleton";
 import { useDashboardStats, useLedger } from "@/lib/store/selectors";
 import { useLedgerStore } from "@/lib/store/ledger-store";
@@ -54,8 +53,6 @@ export default function HomePage() {
                 icon={<Clock className="size-4" />}
               />
             </div>
-
-            <RestockAlert className="mt-4" />
 
             <div className="mt-6 flex items-center justify-between">
               <h2 className="text-sm font-bold uppercase tracking-wide text-muted-foreground">

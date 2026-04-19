@@ -218,6 +218,7 @@ function AddDebtConfirm({
       <AppHeader
         variant="page"
         title="Confirm debt"
+        urduTitle="بقایا کی تصدیق"
         subtitle="Bakaya ki tafseelat check karen"
         backHref="/record"
       />
@@ -325,6 +326,7 @@ function AddPayableConfirm({
       <AppHeader
         variant="page"
         title="Confirm payable"
+        urduTitle="دین کی تصدیق"
         subtitle="Supplier se kharida"
         backHref="/record"
       />
@@ -419,6 +421,7 @@ function AddSaleConfirm({
       <AppHeader
         variant="page"
         title="Confirm sale"
+        urduTitle="بکری کی تصدیق"
         subtitle="Cash bikri"
         backHref="/record"
       />
@@ -518,6 +521,7 @@ function SettleDebtConfirm({
       <AppHeader
         variant="page"
         title="Settle debt"
+        urduTitle="بقایا ادا"
         subtitle="Bakaya clear"
         backHref="/record"
       />
@@ -614,6 +618,7 @@ function AddContactConfirm({
       <AppHeader
         variant="page"
         title="New contact"
+        urduTitle="نیا رابطہ"
         subtitle="Nay customer"
         backHref="/record"
       />
@@ -670,6 +675,7 @@ function UnknownConfirm({
       <AppHeader
         variant="page"
         title="Couldn't understand"
+        urduTitle="سمجھ نہیں آیا"
         backHref="/record"
       />
       <MobileShell>

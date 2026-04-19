@@ -16,7 +16,7 @@ export function MobileShell({ children, flush, className }: MobileShellProps) {
   return (
     <main
       className={cn(
-        "flex-1 overflow-y-auto",
+        "flex-1 overflow-y-auto no-scrollbar",
         flush ? "" : "px-5 pt-4 pb-6",
         className
       )}

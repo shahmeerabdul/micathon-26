@@ -29,6 +29,7 @@ export default function ContactsPage() {
       <AppHeader
         variant="page"
         title="Contacts"
+        urduTitle="رابطے"
         subtitle="Customers you transact with"
         backHref="/"
       />

@@ -40,23 +40,26 @@ export function timeAgo(when: EpochMs | string): string {
 
 export const CATEGORY_LABELS: Record<
   LedgerCategory,
-  { en: string; ur: string; verb: string; href: string }
+  { en: string; ur: string; urduScript: string; verb: string; href: string }
 > = {
   debt: {
     en: "Debt",
     ur: "Bakaya",
+    urduScript: "بقایا",
     verb: "owes you",
     href: "/debt",
   },
   payable: {
     en: "Payables",
     ur: "Denay",
+    urduScript: "دینے",
     verb: "you owe",
     href: "/payables",
   },
   sale: {
     en: "Sales",
     ur: "Bikri",
+    urduScript: "بکری",
     verb: "received",
     href: "/sales",
   },

@@ -2,24 +2,29 @@
 
 import { AppHeader } from "@/components/layout/AppHeader";
 import { MobileShell } from "@/components/layout/MobileShell";
-import { RecentList } from "@/components/dashboard/RecentList";
+import { PayableBySupplierList } from "@/components/dashboard/PayableBySupplierList";
 import { ListSkeleton } from "@/components/shared/Skeleton";
-import { useLedger } from "@/lib/store/selectors";
+import { useOpenPayablesBySupplier } from "@/lib/store/selectors";
 import { useLedgerStore } from "@/lib/store/ledger-store";
 
 export default function PayablesPage() {
   const hasHydrated = useLedgerStore((s) => s.hasHydrated);
-  const entries = useLedger("payable");
+  const groups = useOpenPayablesBySupplier();
   return (
     <>
       <AppHeader
         variant="page"
-        title="Payables · Denay"
+        title="Payables"
+        urduTitle="دینے"
         subtitle="What you owe suppliers"
         backHref="/"
       />
       <MobileShell>
-        {hasHydrated ? <RecentList entries={entries} /> : <ListSkeleton />}
+        {hasHydrated ? (
+          <PayableBySupplierList groups={groups} />
+        ) : (
+          <ListSkeleton />
+        )}
       </MobileShell>
     </>
   );

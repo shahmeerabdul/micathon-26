@@ -64,7 +64,8 @@ export default function NewPayablePage() {
     <>
       <AppHeader
         variant="page"
-        title="New payable · Denay"
+        title="New payable"
+        urduTitle="نیا دین"
         subtitle="You owe a supplier"
         backHref="/new"
       />

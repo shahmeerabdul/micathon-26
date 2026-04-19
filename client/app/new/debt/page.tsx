@@ -43,7 +43,8 @@ export default function NewDebtPage() {
     <>
       <AppHeader
         variant="page"
-        title="New debt · Bakaya"
+        title="New debt"
+        urduTitle="نیا بقایا"
         subtitle="Customer took on credit"
         backHref="/new"
       />

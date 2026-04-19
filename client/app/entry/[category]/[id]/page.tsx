@@ -1,17 +1,20 @@
 "use client";
 
-import { use } from "react";
+import { use, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Trash2, Check, Phone, MessageCircle } from "lucide-react";
+import { Trash2, Check, Phone, MessageCircle, Pencil, X } from "lucide-react";
 import { AppHeader } from "@/components/layout/AppHeader";
 import { MobileShell } from "@/components/layout/MobileShell";
 import { Amount } from "@/components/money/Amount";
 import { ContactAvatar } from "@/components/shared/ContactAvatar";
+import { AmountInput } from "@/components/forms/AmountInput";
+import { BigInput, BigTextarea, FormField } from "@/components/forms/FormField";
 import { useLedgerStore } from "@/lib/store/ledger-store";
 import { useContact } from "@/lib/store/selectors";
 import { formatPKR, timeAgo, CATEGORY_LABELS } from "@/lib/format";
-import type { LedgerCategory } from "@/lib/types";
+import type { LedgerCategory, RupeeAmount } from "@/lib/types";
 
 type Params = { category: string; id: string };
 
@@ -28,7 +31,12 @@ export default function EntryDetailPage({
   if (!validCategory) {
     return (
       <>
-        <AppHeader variant="page" title="Not found" backHref="/" />
+        <AppHeader
+          variant="page"
+          title="Not found"
+          urduTitle="نہیں ملا"
+          backHref="/"
+        />
         <MobileShell>
           <p className="text-sm text-muted-foreground">Unknown category.</p>
         </MobileShell>
@@ -63,6 +71,17 @@ function EntryDetail({
   const deleteDebt = useLedgerStore((s) => s.deleteDebt);
   const deletePayable = useLedgerStore((s) => s.deletePayable);
   const deleteSale = useLedgerStore((s) => s.deleteSale);
+  const updateDebt = useLedgerStore((s) => s.updateDebt);
+  const updatePayable = useLedgerStore((s) => s.updatePayable);
+  const updateSale = useLedgerStore((s) => s.updateSale);
+
+  // Edit-mode local form state. Seeded lazily from the entry when the
+  // user taps "Edit" so opening the sheet always reflects the latest
+  // canonical values.
+  const [isEditing, setIsEditing] = useState(false);
+  const [editAmount, setEditAmount] = useState("");
+  const [editWholesaler, setEditWholesaler] = useState("");
+  const [editNotes, setEditNotes] = useState("");
 
   const contact = useContact(
     debt?.contactId ?? sale?.customerContactId ?? undefined
@@ -75,6 +94,7 @@ function EntryDetail({
         <AppHeader
           variant="page"
           title={label.en}
+          urduTitle={label.urduScript}
           backHref={label.href}
         />
         <MobileShell>
@@ -115,18 +135,63 @@ function EntryDetail({
     }
   };
 
+  const openEditor = () => {
+    setEditAmount(String(amount));
+    setEditWholesaler(payable?.wholesalerName ?? "");
+    setEditNotes(entry.notes ?? "");
+    setIsEditing(true);
+  };
+
+  const handleSaveEdit = () => {
+    const nextAmount = Number(editAmount);
+    if (!Number.isFinite(nextAmount) || nextAmount <= 0) {
+      toast.error("Amount must be greater than zero.");
+      return;
+    }
+    const notes = editNotes.trim() || undefined;
+
+    if (category === "debt" && debt) {
+      updateDebt({
+        ...debt,
+        amount: nextAmount as RupeeAmount,
+        notes,
+      });
+    } else if (category === "payable" && payable) {
+      const name = editWholesaler.trim();
+      if (!name) {
+        toast.error("Wholesaler name is required.");
+        return;
+      }
+      updatePayable({
+        ...payable,
+        wholesalerName: name,
+        amount: nextAmount as RupeeAmount,
+        notes,
+      });
+    } else if (category === "sale" && sale) {
+      updateSale({
+        ...sale,
+        total: nextAmount as RupeeAmount,
+        notes,
+      });
+    }
+    toast.success("Saved changes");
+    setIsEditing(false);
+  };
+
   return (
     <>
       <AppHeader
         variant="page"
         title={label.en}
+        urduTitle={label.urduScript}
         subtitle={label.ur}
         backHref={label.href}
       />
       <MobileShell>
         <div className="space-y-5">
           {/* Hero amount card */}
-          <div className="rounded-[28px] bg-white p-6 ring-1 ring-border shadow-[0_14px_40px_-20px_rgba(0,0,0,0.2)]">
+          <div className="relative rounded-[28px] bg-white p-6 ring-1 ring-border shadow-[0_14px_40px_-20px_rgba(0,0,0,0.2)]">
             <p className="text-xs uppercase tracking-wider text-muted-foreground">
               {label.en} · {label.ur}
             </p>
@@ -142,42 +207,123 @@ function EntryDetail({
                 <Check className="size-3.5" /> Settled
               </span>
             ) : null}
+            {!isEditing ? (
+              <button
+                type="button"
+                onClick={openEditor}
+                aria-label="Edit entry"
+                className="absolute top-4 right-4 inline-flex items-center gap-1 rounded-full bg-sage-soft px-3 py-1.5 text-xs font-semibold ring-1 ring-black/5 active:scale-95 transition"
+              >
+                <Pencil className="size-3.5" />
+                Edit
+              </button>
+            ) : null}
           </div>
 
-          {/* Contact (debt / sale) */}
-          {contact ? (
-            <a
-              href={`/contacts/${contact.id}`}
-              className="flex items-center gap-3 rounded-[22px] bg-white p-3.5 ring-1 ring-border shadow-sm active:scale-[0.99] transition"
-            >
-              <ContactAvatar name={contact.name} />
-              <div className="flex-1 leading-tight min-w-0">
-                <p className="truncate text-sm font-semibold">{contact.name}</p>
-                <p className="truncate text-[11px] text-muted-foreground">
-                  {contact.phone}
+          {/* Edit form */}
+          {isEditing ? (
+            <div className="rounded-[22px] bg-white p-4 ring-1 ring-border shadow-sm space-y-4">
+              <div className="flex items-center justify-between">
+                <p className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Edit {label.en.toLowerCase()}
                 </p>
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(false)}
+                  aria-label="Cancel edit"
+                  className="flex size-7 items-center justify-center rounded-full bg-sage-soft ring-1 ring-black/5"
+                >
+                  <X className="size-3.5" />
+                </button>
               </div>
+
+              <AmountInput
+                value={editAmount}
+                onChange={setEditAmount}
+                label={category === "sale" ? "Sale total" : "Amount"}
+              />
+
+              {category === "payable" ? (
+                <FormField label="Wholesaler" sublabel="Kis ka hisaab?">
+                  <BigInput
+                    value={editWholesaler}
+                    onChange={(e) => setEditWholesaler(e.target.value)}
+                    placeholder="e.g. Bilal Wholesale"
+                  />
+                </FormField>
+              ) : null}
+
+              <FormField label="Notes" sublabel="Optional">
+                <BigTextarea
+                  value={editNotes}
+                  onChange={(e) => setEditNotes(e.target.value)}
+                  placeholder="Any details about this entry"
+                />
+              </FormField>
+
+              <div className="flex gap-2 pt-1">
+                <button
+                  type="button"
+                  onClick={() => setIsEditing(false)}
+                  className="flex-1 rounded-2xl bg-white px-5 py-3 text-sm font-semibold ring-1 ring-border active:scale-95 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveEdit}
+                  className="flex-[2] rounded-2xl bg-ink px-5 py-3 text-sm font-semibold text-background shadow-[0_10px_26px_-14px_rgba(0,0,0,0.5)] active:scale-95 transition"
+                >
+                  Save changes
+                </button>
+              </div>
+            </div>
+          ) : null}
+
+          {/* Contact (debt / sale)
+              NOTE: the outer element must be a <div> — nesting real
+              anchors (call / whatsapp) inside a single wrapping <a>
+              produces invalid HTML and trips React's hydration check.
+              Only the avatar + name area is the "go to contact" link. */}
+          {contact ? (
+            <div className="flex items-center gap-3 rounded-[22px] bg-white p-3.5 ring-1 ring-border shadow-sm">
+              <Link
+                href={`/contacts/${contact.id}`}
+                className="flex flex-1 items-center gap-3 min-w-0 active:scale-[0.99] transition"
+              >
+                <ContactAvatar name={contact.name} />
+                <div className="flex-1 leading-tight min-w-0">
+                  <p className="truncate text-sm font-semibold">
+                    {contact.name}
+                  </p>
+                  <p className="truncate text-[11px] text-muted-foreground">
+                    {contact.phone}
+                  </p>
+                </div>
+              </Link>
               <div className="flex gap-2">
-                <a
-                  href={`tel:${contact.phone}`}
-                  aria-label="Call"
-                  className="flex size-9 items-center justify-center rounded-full bg-sage-soft"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <Phone className="size-4" />
-                </a>
-                <a
-                  href={`https://wa.me/${contact.phone.replace(/\D/g, "")}`}
-                  target="_blank"
-                  rel="noreferrer"
-                  aria-label="WhatsApp"
-                  className="flex size-9 items-center justify-center rounded-full bg-[#25D366] text-white"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <MessageCircle className="size-4" />
-                </a>
+                {contact.phone ? (
+                  <>
+                    <a
+                      href={`tel:${contact.phone}`}
+                      aria-label="Call"
+                      className="flex size-9 items-center justify-center rounded-full bg-sage-soft"
+                    >
+                      <Phone className="size-4" />
+                    </a>
+                    <a
+                      href={`https://wa.me/${contact.phone.replace(/\D/g, "")}`}
+                      target="_blank"
+                      rel="noreferrer"
+                      aria-label="WhatsApp"
+                      className="flex size-9 items-center justify-center rounded-full bg-[#25D366] text-white"
+                    >
+                      <MessageCircle className="size-4" />
+                    </a>
+                  </>
+                ) : null}
               </div>
-            </a>
+            </div>
           ) : null}
 
           {/* Wholesaler (payable) */}

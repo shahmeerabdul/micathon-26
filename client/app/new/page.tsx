@@ -30,7 +30,13 @@ const options = [
 export default function NewPage() {
   return (
     <>
-      <AppHeader variant="page" title="New entry" subtitle="Pick a category" backHref="/" />
+      <AppHeader
+        variant="page"
+        title="New entry"
+        urduTitle="نیا اندراج"
+        subtitle="Pick a category"
+        backHref="/"
+      />
       <MobileShell>
         <ul className="space-y-3">
           {options.map((o) => {

@@ -82,7 +82,8 @@ export default function NewSalePage() {
     <>
       <AppHeader
         variant="page"
-        title="New sale · Bikri"
+        title="New sale"
+        urduTitle="نئی بکری"
         subtitle="Cash received"
         backHref="/new"
       />

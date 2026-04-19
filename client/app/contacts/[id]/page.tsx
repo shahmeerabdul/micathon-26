@@ -41,7 +41,12 @@ export default function ContactDetailPage({
   if (!contact) {
     return (
       <>
-        <AppHeader variant="page" title="Contact" backHref="/contacts" />
+        <AppHeader
+          variant="page"
+          title="Contact"
+          urduTitle="رابطہ"
+          backHref="/contacts"
+        />
         <MobileShell>
           <div className="rounded-[24px] bg-white/80 p-6 text-center ring-1 ring-black/5">
             <p className="text-sm text-muted-foreground">

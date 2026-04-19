@@ -37,7 +37,7 @@ export function CategoryCard({
   return (
     <Link
       href={labels.href}
-      className="group relative overflow-hidden rounded-[24px] bg-white p-4 shadow-[0_10px_24px_-14px_rgba(0,0,0,0.15)] ring-1 ring-black/5 active:scale-[0.99] transition"
+      className="group relative block overflow-hidden rounded-[24px] bg-white p-4 shadow-[0_10px_24px_-14px_rgba(0,0,0,0.15)] ring-1 ring-black/5 active:scale-[0.99] transition"
     >
       <div className={cn("absolute inset-y-4 left-0 w-1.5 rounded-r-full", toneBar[tone])} />
       <div className="flex items-center gap-3 pl-3">
@@ -52,8 +52,12 @@ export function CategoryCard({
         <div className="flex-1 leading-tight">
           <p className="text-sm font-bold text-foreground">
             {labels.en}
-            <span className="ml-1.5 text-[11px] font-medium text-muted-foreground">
-              {labels.ur}
+            <span
+              lang="ur"
+              dir="rtl"
+              className="ml-1.5 text-[12px] font-medium text-muted-foreground"
+            >
+              {labels.urduScript}
             </span>
           </p>
           {subtitle ? (

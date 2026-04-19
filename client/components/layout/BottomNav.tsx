@@ -6,14 +6,16 @@ import { Home, ArrowDownLeft, ArrowUpRight, ShoppingBag, Mic } from "lucide-reac
 import { cn } from "@/lib/utils";
 
 const items = [
-  { href: "/", label: "Home", icon: Home, ur: "Ghar" },
-  { href: "/debt", label: "Debt", icon: ArrowDownLeft, ur: "Bakaya" },
-  { href: "/payables", label: "Payables", icon: ArrowUpRight, ur: "Denay" },
-  { href: "/sales", label: "Sales", icon: ShoppingBag, ur: "Bikri" },
+  { href: "/", label: "Home", icon: Home, urdu: "گھر" },
+  { href: "/debt", label: "Debt", icon: ArrowDownLeft, urdu: "بقایا" },
+  { href: "/payables", label: "Payables", icon: ArrowUpRight, urdu: "دینے" },
+  { href: "/sales", label: "Sales", icon: ShoppingBag, urdu: "بکری" },
 ] as const;
 
 export function BottomNav() {
   const pathname = usePathname();
+  // Hide the bottom nav on auth screens — they have their own CTA.
+  if (pathname === "/login") return null;
   // Split nav into two halves so the center FAB can float between them.
   const leftItems = items.slice(0, 2);
   const rightItems = items.slice(2);
@@ -70,11 +72,18 @@ function NavLink({
       <Link
         href={item.href}
         className={cn(
-          "flex flex-col items-center gap-0.5 rounded-full px-3 py-1.5 text-[10px] font-medium transition",
+          "flex flex-col items-center gap-0.5 rounded-full px-3 py-1 text-[10px] font-medium transition",
           active ? "text-foreground" : "text-muted-foreground hover:text-foreground"
         )}
         aria-current={active ? "page" : undefined}
       >
+        <span
+          lang="ur"
+          dir="rtl"
+          className="text-[9px] leading-none text-muted-foreground/70"
+        >
+          {item.urdu}
+        </span>
         <span
           className={cn(
             "flex size-9 items-center justify-center rounded-full transition",

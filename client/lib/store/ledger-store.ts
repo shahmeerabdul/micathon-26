@@ -414,7 +414,21 @@ export const useLedgerStore = create<LedgerState>()(
         inventory: s.inventory,
       }),
       onRehydrateStorage: () => (state) => {
-        state?.setHasHydrated(true);
+        if (state) {
+          // One-time cleanup: prior versions of the supplier_payment mirror
+          // wrote a zero-amount "paid" payable whenever the voice command
+          // didn't match an existing wholesaler. Those rows now appear as
+          // "+Rs. 0 · settled" noise in /payables, so we prune them on
+          // rehydrate. Safe because a legitimate payable can never have
+          // amount === 0.
+          const cleanedPayables = state.payables.filter(
+            (p) => !(p.amount === 0 && p.paid),
+          );
+          if (cleanedPayables.length !== state.payables.length) {
+            state.payables = cleanedPayables;
+          }
+          state.setHasHydrated(true);
+        }
       },
     }
   )

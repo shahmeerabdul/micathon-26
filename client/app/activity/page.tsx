@@ -44,6 +44,7 @@ export default function ActivityPage() {
       <AppHeader
         variant="page"
         title="Activity"
+        urduTitle="سرگرمی"
         subtitle="Sari tafseelat"
         backHref="/"
       />

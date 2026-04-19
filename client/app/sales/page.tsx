@@ -14,7 +14,8 @@ export default function SalesPage() {
     <>
       <AppHeader
         variant="page"
-        title="Sales · Bikri"
+        title="Sales"
+        urduTitle="بکری"
         subtitle="Cash sales today"
         backHref="/"
       />

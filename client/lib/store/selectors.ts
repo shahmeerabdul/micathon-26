@@ -20,6 +20,8 @@ import {
   type DashboardStats,
   type Contact,
   type Id,
+  type EpochMs,
+  type RupeeAmount,
 } from "../types";
 
 /** Returns the full contact list sorted alphabetically. */
@@ -37,6 +39,20 @@ export function useContact(id: Id | undefined): Contact | undefined {
     () => (id ? contacts.find((c) => c.id === id) : undefined),
     [contacts, id]
   );
+}
+
+/**
+ * Find a local contact by display name — useful when bridging from a
+ * server-returned `CustomerView` (which knows the name but not the local
+ * Zustand id) back into the client store. Case- and whitespace-tolerant.
+ */
+export function useLocalContactByName(name: string | undefined): Contact | undefined {
+  const contacts = useLedgerStore((s) => s.contacts);
+  return useMemo(() => {
+    if (!name) return undefined;
+    const key = name.trim().toLowerCase();
+    return contacts.find((c) => c.name.trim().toLowerCase() === key);
+  }, [contacts, name]);
 }
 
 /** Raw lookup for imperative code (event handlers etc.). */
@@ -113,6 +129,115 @@ export function useDebtsForContact(contactId: Id | undefined) {
   }, [debts, contactId]);
 }
 
+/**
+ * Aggregate of open debts grouped by customer.
+ *
+ * Each customer surfaces as a single row carrying the running total they owe,
+ * the most recent debt timestamp, and the count of underlying debt events.
+ * Individual debt transactions are preserved in the store — they remain
+ * visible on the contact detail page — so this view-model exists purely so
+ * `/debt` behaves like a khata book (one line per customer, not per entry).
+ *
+ * Sorted by most recent activity first.
+ */
+export interface DebtContactGroup {
+  contactId: Id;
+  name: string;
+  /** Sum of `amount` across this contact's unsettled debts. */
+  total: RupeeAmount;
+  /** Most recent debt `date` across the contact's unsettled debts. */
+  latestDate: EpochMs;
+  /** Number of unsettled debt events rolled up into this row. */
+  count: number;
+}
+
+export function useOpenDebtsByContact(): DebtContactGroup[] {
+  const debts = useLedgerStore((s) => s.debts);
+  const contactMap = useContactMap();
+
+  return useMemo(() => {
+    const groups = new Map<Id, DebtContactGroup>();
+    for (const d of debts) {
+      if (d.settled) continue;
+      const contact = contactMap.get(d.contactId);
+      const existing = groups.get(d.contactId);
+      if (existing) {
+        existing.total += d.amount;
+        existing.count += 1;
+        if (d.date > existing.latestDate) existing.latestDate = d.date;
+      } else {
+        groups.set(d.contactId, {
+          contactId: d.contactId,
+          name: contact?.name ?? "Unknown",
+          total: d.amount,
+          latestDate: d.date,
+          count: 1,
+        });
+      }
+    }
+    return [...groups.values()].sort((a, b) => b.latestDate - a.latestDate);
+  }, [debts, contactMap]);
+}
+
+/**
+ * Aggregate of open payables grouped by supplier name.
+ *
+ * Same rationale as `useOpenDebtsByContact` — payables for the same
+ * wholesaler should collapse into a single row on the Payables page so
+ * "Bilal Wholesale Rs. 400" and "Bilal Wholesale Rs. 85,000" appear as
+ * one "Bilal Wholesale Rs. 85,400" line. The underlying transaction
+ * rows are preserved and remain editable via the entry detail page.
+ *
+ * Names are grouped case-insensitively with whitespace collapsed.
+ */
+export interface PayableSupplierGroup {
+  /** Canonical (most-recent) display name for the supplier. */
+  name: string;
+  /** Normalised lower-case key used for fuzzy matching + grouping. */
+  key: string;
+  /** Sum of `amount` across this supplier's unpaid payables. */
+  total: RupeeAmount;
+  /** Most recent payable `date` across the supplier's unpaid payables. */
+  latestDate: EpochMs;
+  /** Number of unpaid payable events rolled up into this row. */
+  count: number;
+  /** IDs of the underlying unpaid payables — handy for deep-linking to
+   *  the entry detail page from the grouped row. */
+  payableIds: Id[];
+}
+
+export function useOpenPayablesBySupplier(): PayableSupplierGroup[] {
+  const payables = useLedgerStore((s) => s.payables);
+
+  return useMemo(() => {
+    const groups = new Map<string, PayableSupplierGroup>();
+    for (const p of payables) {
+      if (p.paid) continue;
+      const key = p.wholesalerName.trim().toLowerCase().replace(/\s+/g, " ");
+      const existing = groups.get(key);
+      if (existing) {
+        existing.total += p.amount;
+        existing.count += 1;
+        existing.payableIds.push(p.id);
+        if (p.date > existing.latestDate) {
+          existing.latestDate = p.date;
+          existing.name = p.wholesalerName;
+        }
+      } else {
+        groups.set(key, {
+          key,
+          name: p.wholesalerName,
+          total: p.amount,
+          latestDate: p.date,
+          count: 1,
+          payableIds: [p.id],
+        });
+      }
+    }
+    return [...groups.values()].sort((a, b) => b.latestDate - a.latestDate);
+  }, [payables]);
+}
+
 /** Sum of open debts for one contact. */
 export function useContactOutstanding(contactId: Id | undefined): number {
   const debts = useDebtsForContact(contactId);
@@ -120,6 +245,21 @@ export function useContactOutstanding(contactId: Id | undefined): number {
     () => debts.filter((d) => !d.settled).reduce((s, d) => s + d.amount, 0),
     [debts]
   );
+}
+
+/**
+ * Lifetime cash-paid spend for a contact, derived from the Sales list.
+ * Mirrors the server's definition (cash purchases only — open debts are
+ * tracked separately via `useContactOutstanding`).
+ */
+export function useContactTotalSpent(contactId: Id | undefined): number {
+  const sales = useLedgerStore((s) => s.sales);
+  return useMemo(() => {
+    if (!contactId) return 0;
+    return sales
+      .filter((s) => s.customerContactId === contactId)
+      .reduce((sum, s) => sum + s.total, 0);
+  }, [sales, contactId]);
 }
 
 /** Inventory items currently at or below their restock threshold. */

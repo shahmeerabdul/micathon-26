@@ -252,41 +252,77 @@ All state lives client-side in `LocalStorage` under three keys:
 
 ### Prerequisites
 - Node.js **≥ 20**
-- npm or pnpm
-- A Google Gemini API key (free tier works)
+- **pnpm ≥ 9** (this is a monorepo — `npm install` will **not** work)
+- A **Google Gemini API key** → [aistudio.google.com/apikey](https://aistudio.google.com/apikey)
+- A **MongoDB Atlas cluster** (free M0 tier is enough) → [cloud.mongodb.com](https://cloud.mongodb.com)
 
 ### Installation
 
 ```bash
 git clone https://github.com/ZuhaibAkhtarKhan/Micathon-26.git
 cd Micathon-26
-npm install
+pnpm install
 ```
 
 ### Environment variables
 
-Create a `.env.local` file in the project root:
+The template lives at `server/.env.example`. Copy it to **`client/.env.local`** (Next.js reads env vars relative to the app root, not the workspace root):
 
 ```bash
-GEMINI_API_KEY=your_key_here
-# Optional fallback
-GROQ_API_KEY=your_key_here
+cp server/.env.example client/.env.local
 ```
+
+Then open `client/.env.local` and fill in:
+
+```bash
+# Gemini — used for audio transcription + intent parsing
+GEMINI_API_KEY=your_google_ai_studio_key
+GEMINI_MODEL=gemini-3-flash-preview
+
+# MongoDB Atlas — stores customers and purchases
+MONGODB_URI=mongodb+srv://<user>:<pwd>@<cluster>.mongodb.net/?retryWrites=true&w=majority
+MONGODB_DB=khata
+```
+
+> **Setting up Atlas:** create a free cluster → *Database Access* → add a user with `readWrite` → *Network Access* → allow your IP (or `0.0.0.0/0` for the hackathon) → *Connect* → *Drivers* → copy the connection string. Substitute `<user>` and `<pwd>` with the credentials you created.
 
 ### Run locally
 
 ```bash
-npm run dev
+pnpm dev
 ```
 
-Open **http://localhost:3000** on your phone (same Wi-Fi) or desktop. Grant microphone permission on first use.
+This runs `next dev` inside `client/` and hot-transpiles the `server/` package via Next's `transpilePackages`. Open **http://localhost:3000** on your phone (same Wi-Fi) or desktop. Grant microphone permission on first use.
 
 ### Build for production
 
 ```bash
-npm run build
-npm run start
+pnpm build   # full monorepo typecheck + Next production build
+pnpm start   # serve the built app
 ```
+
+### Voice pipeline (how a single utterance flows through the stack)
+
+```
+📱 Phone mic
+  │  MediaRecorder → Blob (audio/webm or audio/mp4)
+  ▼
+POST /api/voice/record        (Next.js route handler, Node runtime)
+  │
+  ├─► Gemini 3 Flash
+  │      • Inline audio + system prompt
+  │      • responseSchema forces a valid JSON intent
+  │
+  ├─► MongoDB Atlas › customers
+  │      • Fuzzy-match spoken name (Dice bigrams + token boost)
+  │      • Auto-create customer when similarity < 0.72
+  │
+  └─► MongoDB Atlas › purchases
+         • Insert { customerId, items, amount, kind, audioTranscript }
+         • Return the saved doc + fresh customer balance
+```
+
+The frontend then navigates to `/record/receipt`, which shows the Gemini transcript, the resolved customer, the saved items, the running balance, and an **Undo** button that calls `POST /api/voice/undo` to delete the purchase if the match was wrong.
 
 ---
 
@@ -294,29 +330,50 @@ npm run start
 
 ```
 Micathon-26/
-├── app/
-│   ├── (ledger)/
-│   │   └── page.tsx              # Main ledger screen
-│   ├── api/
-│   │   └── process-audio/
-│   │       └── route.ts          # LLM orchestration
-│   ├── layout.tsx
-│   └── globals.css
-├── components/
-│   ├── MicButton.tsx             # Hold-to-record control
-│   ├── LedgerCard.tsx            # Transaction card
-│   ├── UndoToast.tsx
-│   └── RestockAlert.tsx
-├── lib/
-│   ├── speech.ts                 # Web Speech API wrapper
-│   ├── llm.ts                    # Gemini / Groq client
-│   ├── storage.ts                # LocalStorage helpers
-│   ├── fuzzy.ts                  # Customer name matching
-│   └── prompt.ts                 # Prompt template builder
-├── public/
-├── .env.local.example
-├── package.json
-└── README.md
+├── pnpm-workspace.yaml
+├── tsconfig.base.json
+├── package.json                    # root orchestrator (pnpm workspaces)
+│
+├── client/                         # Next.js 16 App Router (frontend)
+│   ├── app/
+│   │   ├── page.tsx                # Dashboard (hero balance + recent)
+│   │   ├── record/
+│   │   │   ├── page.tsx            # Hold-to-speak mic
+│   │   │   ├── confirm/page.tsx    # Local/offline confirm flow
+│   │   │   └── receipt/page.tsx    # Post-save receipt (server path)
+│   │   ├── api/voice/
+│   │   │   ├── record/route.ts     # Audio upload → Gemini → Mongo
+│   │   │   └── undo/route.ts       # Delete last saved purchase
+│   │   ├── debt|payables|sales/    # Ledger filter views
+│   │   ├── contacts/…              # Contact list + detail + new
+│   │   ├── new/…                   # Manual-entry forms
+│   │   └── entry/[category]/[id]/  # Entry detail + settle/delete
+│   ├── components/                 # UI primitives + shared layouts
+│   ├── lib/
+│   │   ├── hooks/useAudioRecorder.ts
+│   │   ├── store/                  # Zustand stores + selectors
+│   │   ├── actions.ts              # Client ↔ server API wrapper
+│   │   ├── fuzzy.ts | intent.ts    # Local demo fallbacks
+│   │   └── types.ts                # Re-exports from @khata/server
+│   └── next.config.ts              # transpilePackages: ["@khata/server"]
+│
+└── server/                         # @khata/server (backend logic)
+    ├── src/
+    │   ├── types.ts                # Domain types (Contact, Debt, …)
+    │   ├── encryption.ts           # PBKDF2 + AES-GCM vault
+    │   ├── integrations/
+    │   │   └── gemini-client.ts    # Gemini 3 Flash wrapper
+    │   ├── db/
+    │   │   ├── mongo.ts            # Atlas client singleton
+    │   │   ├── schemas.ts          # Zod + Mongo doc shapes
+    │   │   ├── customers.ts        # CRUD + fuzzy name lookup
+    │   │   └── purchases.ts        # CRUD + balance aggregation
+    │   ├── actions/
+    │   │   └── voice-intent.ts     # audio → Gemini → Mongo pipeline
+    │   └── index.ts                # Public barrel of @khata/server
+    ├── scripts/smoke-crypto.mjs    # Vault smoke test
+    ├── .env.example                # Template for client/.env.local
+    └── package.json
 ```
 
 ---
