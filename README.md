@@ -191,8 +191,6 @@ cd micathon-26
 pnpm install
 ```
 
-*(Original team fork: [github.com/ZuhaibAkhtarKhan/Micathon-26](https://github.com/ZuhaibAkhtarKhan/Micathon-26).)*
-
 ### Environment
 
 Copy the template and fill in **real** values locally (never commit secrets):
